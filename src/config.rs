@@ -29,8 +29,7 @@ struct CliArgument {
 pub struct ServerConfig {
     #[serde(default)]
     pub name: String,
-    pub host: String,
-    pub port: u16,
+    pub addr: String,
     #[serde(default)]
     pub pub_certs: Option<Vec<String>>,
     #[serde(default)]
