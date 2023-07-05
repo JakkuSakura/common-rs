@@ -12,12 +12,12 @@ use std::path::PathBuf;
 struct CliArgument {
     /// The path to config file
     #[clap(
-        short,
-        long,
-        value_parser,
-        value_name = "FILE",
-        default_value = "etc/config.json",
-        env = "CONFIG"
+    short,
+    long,
+    value_parser,
+    value_name = "FILE",
+    default_value = "etc/config.json",
+    env = "CONFIG"
     )]
     config: PathBuf,
     /// The path to config file
@@ -44,10 +44,14 @@ pub fn load_config<Config: DeserializeOwned + Debug>(mut service_name: String) -
     println!("Working directory {}", current_dir()?.display());
     println!("Loading config from {}", args.config.display());
     let config = std::fs::read_to_string(&args.config)?;
-    let mut config: Value = serde_json::from_str(&config)?;
+    let config: Value = serde_json::from_str(&config)?;
     if let Some(entry) = args.config_entry {
         service_name = entry;
     }
+    parse_config(config, service_name)
+}
+
+pub fn parse_config<Config: DeserializeOwned + Debug>(mut config: Value, service_name: String) -> Result<Config> {
     let service_config = config
         .get_mut(&service_name)
         .ok_or_else(|| eyre!("Service {} not found in config", service_name))?
