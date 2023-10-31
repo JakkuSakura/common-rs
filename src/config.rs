@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::env::current_dir;
 use std::fmt::Debug;
 use std::path::PathBuf;
+use dotenvy::dotenv;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -39,6 +40,14 @@ pub struct ServerConfig {
 }
 
 pub fn load_config<Config: DeserializeOwned + Debug>(service_name: impl AsRef<str>) -> Result<Config> {
+     println!("Loading environment");
+    if let Err(err) = dotenv() {
+        println!("Failed to load environment: {}", err);
+    }
+    // print all environment variables
+    // for (key, value) in std::env::vars() {
+    //     println!("{}: {}", key, value);
+    // }
     let args: CliArgument = CliArgument::parse();
 
     println!("Working directory {}", current_dir()?.display());
