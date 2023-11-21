@@ -16,7 +16,7 @@ color-eyre = "0.6.2"
 thiserror = "1.0.37"
 clap = { version = "4.0.26", features = ["derive", "env"] }
 serde = { version = "1.0.147", features = ["derive"] }
-tracing-subscriber = { version = "0.3.16", features = ["env-filter", "registry"] }
+tracing-subscriber = { version = "0.3.16", features = ["env-filter", "registry", "std"] }
 console-subscriber = "0.2.0"
 tracing-error = "0.2.0"
 tracing-appender = "0.2.2"
