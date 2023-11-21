@@ -2,7 +2,6 @@ use eyre::*;
 use serde::*;
 use std::str::FromStr;
 use tracing::level_filters::LevelFilter;
-use tracing_log::LogTracer;
 use tracing_subscriber::{fmt, EnvFilter};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -68,7 +67,6 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     Ok(filter)
 }
 pub fn setup_logs(log_level: LogLevel) -> Result<()> {
-   LogTracer::init().context("Cannot setup_logs")?;
     let filter_layer = build_env_filter(log_level)?;
 
     let fmt_layer = fmt::layer()
@@ -82,7 +80,6 @@ pub fn setup_logs(log_level: LogLevel) -> Result<()> {
     Ok(())
 }
 pub fn setup_logs_with_console_subscriber(log_level: LogLevel) -> Result<()> {
-    LogTracer::init().context("Cannot setup_logs")?;
     let filter_layer = build_env_filter(log_level)?;
 
     let fmt_layer = fmt::layer()
