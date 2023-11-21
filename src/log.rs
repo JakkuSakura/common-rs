@@ -4,6 +4,8 @@ use std::str::FromStr;
 use tracing::level_filters::LevelFilter;
 use tracing_log::LogTracer;
 use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -66,16 +68,32 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     Ok(filter)
 }
 pub fn setup_logs(log_level: LogLevel) -> Result<()> {
-    LogTracer::init().context("Cannot setup_logs")?;
-    let filter = build_env_filter(log_level)?;
+   LogTracer::init().context("Cannot setup_logs")?;
+    let filter_layer = build_env_filter(log_level)?;
 
-    let subscriber = fmt()
+    let fmt_layer = fmt::layer()
         .with_thread_names(true)
-        .with_line_number(true)
-        .with_env_filter(filter)
-        .finish();
+        .with_line_number(true);
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .init();
+    log_panics::init();
+    Ok(())
+}
+pub fn setup_logs_with_console_subscriber(log_level: LogLevel) -> Result<()> {
+    LogTracer::init().context("Cannot setup_logs")?;
+    let filter_layer = build_env_filter(log_level)?;
 
-    tracing::subscriber::set_global_default(subscriber).context("Cannot setup_logs")?;
+    let fmt_layer = fmt::layer()
+        .with_thread_names(true)
+        .with_line_number(true);
+    let console_layer = console_subscriber::ConsoleLayer::builder().spawn();
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(console_layer)
+        .init();
     log_panics::init();
     Ok(())
 }
