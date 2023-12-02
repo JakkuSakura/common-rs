@@ -1,4 +1,5 @@
 use clap::Parser;
+use dotenvy::dotenv;
 use eyre::*;
 use serde::de::DeserializeOwned;
 use serde::*;
@@ -6,7 +7,6 @@ use serde_json::Value;
 use std::env::current_dir;
 use std::fmt::Debug;
 use std::path::PathBuf;
-use dotenvy::dotenv;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -18,7 +18,8 @@ struct CliArgument {
     value_parser,
     value_name = "FILE",
     default_value = "etc/config.json",
-    env = "CONFIG"
+    env = "CONFIG",
+    value_hint = clap::ValueHint::FilePath
     )]
     config: PathBuf,
     /// The path to config file
@@ -39,8 +40,10 @@ pub struct ServerConfig {
     pub debug: bool,
 }
 
-pub fn load_config<Config: DeserializeOwned + Debug>(service_name: impl AsRef<str>) -> Result<Config> {
-     println!("Loading environment");
+pub fn load_config<Config: DeserializeOwned + Debug>(
+    service_name: impl AsRef<str>,
+) -> Result<Config> {
+    println!("Loading environment");
     if let Err(err) = dotenv() {
         println!("Failed to load environment: {}", err);
     }
@@ -61,7 +64,10 @@ pub fn load_config<Config: DeserializeOwned + Debug>(service_name: impl AsRef<st
     }
 }
 
-pub fn parse_config<Config: DeserializeOwned + Debug>(mut config: Value, service_name: &str) -> Result<Config> {
+pub fn parse_config<Config: DeserializeOwned + Debug>(
+    mut config: Value,
+    service_name: &str,
+) -> Result<Config> {
     let service_config = config
         .get_mut(&service_name)
         .ok_or_else(|| eyre!("Service {} not found in config", service_name))?
