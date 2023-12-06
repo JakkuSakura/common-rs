@@ -2,7 +2,6 @@ use clap::Parser;
 use dotenvy::dotenv;
 use eyre::*;
 use serde::de::DeserializeOwned;
-use serde::*;
 use serde_json::Value;
 use std::env::current_dir;
 use std::fmt::Debug;
@@ -25,19 +24,6 @@ struct CliArgument {
     /// The path to config file
     #[clap(long)]
     config_entry: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ServerConfig {
-    #[serde(default)]
-    pub name: String,
-    pub addr: String,
-    #[serde(default)]
-    pub pub_certs: Option<Vec<String>>,
-    #[serde(default)]
-    pub priv_cert: Option<String>,
-    #[serde(default)]
-    pub debug: bool,
 }
 
 pub fn load_config<Config: DeserializeOwned + Debug>(
