@@ -16,11 +16,10 @@ struct CliArgument {
     long,
     value_parser,
     value_name = "FILE",
-    default_value = "etc/config.json",
     env = "CONFIG",
     value_hint = clap::ValueHint::FilePath
     )]
-    config: PathBuf,
+    config: Option<PathBuf>,
     /// The path to config file
     #[clap(long)]
     config_entry: Option<String>,
@@ -28,6 +27,12 @@ struct CliArgument {
 
 pub fn load_config<Config: DeserializeOwned + Debug>(
     service_name: impl AsRef<str>,
+) -> Result<Config> {
+    load_config_with_default_path(service_name, "config.json")
+}
+pub fn load_config_with_default_path<Config: DeserializeOwned + Debug>(
+    service_name: impl AsRef<str>,
+    path: impl AsRef<str>,
 ) -> Result<Config> {
     println!("Loading environment");
     if let Err(err) = dotenv() {
@@ -40,8 +45,9 @@ pub fn load_config<Config: DeserializeOwned + Debug>(
     let args: CliArgument = CliArgument::parse();
 
     println!("Working directory {}", current_dir()?.display());
-    println!("Loading config from {}", args.config.display());
-    let config = std::fs::read_to_string(&args.config)?;
+    let config = args.config.unwrap_or_else(|| PathBuf::from(path.as_ref()));
+    println!("Loading config from {}", config.display());
+    let config = std::fs::read_to_string(&config)?;
     let config: Value = serde_json::from_str(&config)?;
     if let Some(entry) = args.config_entry {
         parse_config(config, &entry)
