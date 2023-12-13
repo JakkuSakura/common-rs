@@ -28,7 +28,7 @@ struct CliArgument {
 pub fn load_config<Config: DeserializeOwned + Debug>(
     service_name: impl AsRef<str>,
 ) -> Result<Config> {
-    load_config_with_default_path(service_name, "config.json")
+    load_config_with_default_path(service_name, "etc/config.json")
 }
 pub fn load_config_with_default_path<Config: DeserializeOwned + Debug>(
     service_name: impl AsRef<str>,
