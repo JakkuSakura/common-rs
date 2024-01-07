@@ -2,9 +2,9 @@ use eyre::*;
 use serde::*;
 use std::str::FromStr;
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{fmt, EnvFilter};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{fmt, EnvFilter};
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -67,11 +67,11 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     Ok(filter)
 }
 pub fn setup_logs(log_level: LogLevel) -> Result<()> {
+    color_eyre::install()?;
+
     let filter_layer = build_env_filter(log_level)?;
 
-    let fmt_layer = fmt::layer()
-        .with_thread_names(true)
-        .with_line_number(true);
+    let fmt_layer = fmt::layer().with_thread_names(true).with_line_number(true);
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
@@ -80,11 +80,11 @@ pub fn setup_logs(log_level: LogLevel) -> Result<()> {
     Ok(())
 }
 pub fn setup_logs_with_console_subscriber(log_level: LogLevel) -> Result<()> {
+    color_eyre::install()?;
+
     let filter_layer = build_env_filter(log_level)?;
 
-    let fmt_layer = fmt::layer()
-        .with_thread_names(true)
-        .with_line_number(true);
+    let fmt_layer = fmt::layer().with_thread_names(true).with_line_number(true);
     let console_layer = console_subscriber::ConsoleLayer::builder().spawn();
     tracing_subscriber::registry()
         .with(filter_layer)
