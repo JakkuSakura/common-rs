@@ -1,5 +1,5 @@
 use clap::Parser;
-use dotenvy::dotenv;
+pub use dotenvy::dotenv;
 use eyre::*;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
