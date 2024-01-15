@@ -1,10 +1,8 @@
 // these are re-exports from other crates
 
-pub use ::tap::*;
 pub use async_compat::{Compat, CompatExt};
 pub use async_trait::async_trait;
 pub use bytes::{self, Buf, BufMut, Bytes, BytesMut};
-pub use cfg_if::cfg_if;
 pub use chrono::{
     DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc,
 };
@@ -21,12 +19,9 @@ pub use futures::{
     try_join, AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt,
     Future, FutureExt, Sink, SinkExt, Stream, StreamExt,
 };
-pub use itertools::*;
-pub use lazy_static::*;
 pub use minimal_executor::{block_fn, block_on, poll_fn, poll_on};
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 pub use serde_json::{self, Value};
-pub use serde_yaml;
 pub use static_assertions;
 pub use static_assertions::*;
 pub use std::{
@@ -41,8 +36,6 @@ pub use std::{
     pin::Pin,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
-pub use strum::{self, *};
-pub use strum_macros::{self, *};
 pub use thiserror::Error;
 pub use tokio::{
     self,
