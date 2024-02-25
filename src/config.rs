@@ -1,5 +1,5 @@
+use crate::load_env_recursively;
 use clap::Parser;
-pub use dotenvy::dotenv;
 use eyre::*;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -30,12 +30,13 @@ pub fn load_config<Config: DeserializeOwned + Debug>(
 ) -> Result<Config> {
     load_config_with_default_path(service_name, "etc/config.json")
 }
+
 pub fn load_config_with_default_path<Config: DeserializeOwned + Debug>(
     service_name: impl AsRef<str>,
     path: impl AsRef<str>,
 ) -> Result<Config> {
     println!("Loading environment");
-    if let Err(err) = dotenv() {
+    if let Err(err) = load_env_recursively() {
         println!("Failed to load environment: {}", err);
     }
     // print all environment variables
