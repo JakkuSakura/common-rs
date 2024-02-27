@@ -18,6 +18,7 @@ pub enum LogLevel {
     Trace,
     Detail,
 }
+
 impl LogLevel {
     pub fn as_level_filter(&self) -> LevelFilter {
         match self {
@@ -31,6 +32,7 @@ impl LogLevel {
         }
     }
 }
+
 impl FromStr for LogLevel {
     type Err = Error;
 
@@ -47,6 +49,7 @@ impl FromStr for LogLevel {
         }
     }
 }
+
 fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     let mut filter =
         EnvFilter::from_default_env().add_directive(log_level.as_level_filter().into());
@@ -66,12 +69,21 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     }
     Ok(filter)
 }
+
+fn build_fmt_layer<S>() -> fmt::Layer<S> {
+    let thread_names = false;
+    let line_numbers = true;
+    fmt::layer()
+        .with_thread_names(thread_names)
+        .with_line_number(line_numbers)
+}
+
 pub fn setup_logs(log_level: LogLevel) -> Result<()> {
     color_eyre::install()?;
 
     let filter_layer = build_env_filter(log_level)?;
 
-    let fmt_layer = fmt::layer().with_thread_names(true).with_line_number(true);
+    let fmt_layer = build_fmt_layer();
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
@@ -79,12 +91,13 @@ pub fn setup_logs(log_level: LogLevel) -> Result<()> {
     log_panics::init();
     Ok(())
 }
+
 pub fn setup_logs_with_console_subscriber(log_level: LogLevel) -> Result<()> {
     color_eyre::install()?;
 
     let filter_layer = build_env_filter(log_level)?;
 
-    let fmt_layer = fmt::layer().with_thread_names(true).with_line_number(true);
+    let fmt_layer = build_fmt_layer();
     let console_layer = console_subscriber::ConsoleLayer::builder().spawn();
     tracing_subscriber::registry()
         .with(filter_layer)
