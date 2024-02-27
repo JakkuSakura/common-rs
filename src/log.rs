@@ -81,7 +81,7 @@ macro_rules! build_fmt_layer {
             .with_thread_names(thread_names)
             .with_target(target)
             .with_file(file_name)
-            .with_line_number(line_number)
+            .with_line_number(line_number);
 
         fmt::layer().event_format(format)
     }};
