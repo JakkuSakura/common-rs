@@ -70,12 +70,21 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     Ok(filter)
 }
 
-fn build_fmt_layer<S>() -> fmt::Layer<S> {
-    let thread_names = false;
-    let line_numbers = true;
-    fmt::layer()
-        .with_thread_names(thread_names)
-        .with_line_number(line_numbers)
+macro_rules! build_fmt_layer {
+    () => {{
+        let thread_names = false;
+        let target = true;
+        let file_name = false;
+        let line_number = true;
+
+        let format = fmt::format::format()
+            .with_thread_names(thread_names)
+            .with_target(target)
+            .with_file(file_name)
+            .with_line_number(line_number)
+
+        fmt::layer().event_format(format)
+    }};
 }
 
 pub fn setup_logs(log_level: LogLevel) -> Result<()> {
@@ -83,7 +92,7 @@ pub fn setup_logs(log_level: LogLevel) -> Result<()> {
 
     let filter_layer = build_env_filter(log_level)?;
 
-    let fmt_layer = build_fmt_layer();
+    let fmt_layer = build_fmt_layer!();
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
@@ -97,7 +106,7 @@ pub fn setup_logs_with_console_subscriber(log_level: LogLevel) -> Result<()> {
 
     let filter_layer = build_env_filter(log_level)?;
 
-    let fmt_layer = build_fmt_layer();
+    let fmt_layer = build_fmt_layer!();
     let console_layer = console_subscriber::ConsoleLayer::builder().spawn();
     tracing_subscriber::registry()
         .with(filter_layer)
