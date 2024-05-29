@@ -1,11 +1,31 @@
-use eyre::*;
-use serde::*;
+use std::path::PathBuf;
 use std::str::FromStr;
-use tracing::level_filters::LevelFilter;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{fmt, EnvFilter};
 
+use eyre::{eyre, Context, Result};
+use serde::{Deserialize, Serialize};
+use tracing::level_filters::LevelFilter;
+use tracing::Subscriber;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{fmt, EnvFilter, Layer};
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum LogRotationInterval {
+    #[default]
+    Never,
+    Daily,
+    Hourly,
+}
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum LogConsoleTarget {
+    Null,
+    #[default]
+    Stdout,
+    Stderr,
+}
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
@@ -34,7 +54,7 @@ impl LogLevel {
 }
 
 impl FromStr for LogLevel {
-    type Err = Error;
+    type Err = eyre::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s.to_ascii_lowercase().as_ref() {
@@ -70,6 +90,7 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
     Ok(filter)
 }
 
+// type of format is too complex to be built with a function
 macro_rules! build_fmt_layer {
     () => {{
         let thread_names = false;
@@ -87,32 +108,108 @@ macro_rules! build_fmt_layer {
     }};
 }
 
-pub fn setup_logs(log_level: LogLevel) -> Result<()> {
-    color_eyre::install()?;
-
-    let filter_layer = build_env_filter(log_level)?;
-
-    let fmt_layer = build_fmt_layer!();
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .init();
-    log_panics::init();
-    Ok(())
+#[derive(Debug, Clone, Deserialize)]
+pub struct LogConfig {
+    pub level: LogLevel,
+    #[serde(default)]
+    pub console: LogConsoleTarget,
+    pub file: Option<PathBuf>,
+    pub rotation: LogRotationInterval,
+    pub console_subscriber: bool,
 }
+impl From<LogLevel> for LogConfig {
+    fn from(level: LogLevel) -> Self {
+        Self {
+            level,
+            console: LogConsoleTarget::Stdout,
+            file: None,
+            rotation: LogRotationInterval::Never,
+            console_subscriber: false,
+        }
+    }
+}
+impl LogConfig {
+    fn console_layer<S>(&self) -> Option<Box<dyn Layer<S> + Send + Sync>>
+    where
+        S: Subscriber,
+        for<'a> S: LookupSpan<'a>,
+    {
+        match self.console {
+            LogConsoleTarget::Null => None,
+            LogConsoleTarget::Stdout => {
+                Some(build_fmt_layer!().with_writer(std::io::stdout).boxed())
+            }
+            LogConsoleTarget::Stderr => {
+                Some(build_fmt_layer!().with_writer(std::io::stderr).boxed())
+            }
+        }
+    }
+    fn file_layer<S>(&self) -> Result<Option<Box<dyn Layer<S> + Send + Sync>>>
+    where
+        S: Subscriber,
+        for<'a> S: LookupSpan<'a>,
+    {
+        let Some(path) = self.file.as_ref() else {
+            return Ok(None);
+        };
 
-pub fn setup_logs_with_console_subscriber(log_level: LogLevel) -> Result<()> {
-    color_eyre::install()?;
+        let dir = path
+            .parent()
+            .ok_or_else(|| eyre!("Invalid log file path"))?;
+        std::fs::create_dir_all(dir).with_context(|| format!("Failed to create dir: {:?}", dir))?;
+        let prefix = path
+            .file_stem()
+            .ok_or_else(|| eyre!("Invalid log file path"))?;
+        let rotation = match self.rotation {
+            LogRotationInterval::Daily => tracing_appender::rolling::daily(path, prefix),
+            LogRotationInterval::Hourly => tracing_appender::rolling::hourly(path, prefix),
+            LogRotationInterval::Never => tracing_appender::rolling::never(path, prefix),
+        };
+        Ok(Some(build_fmt_layer!().with_writer(rotation).boxed()))
+    }
+    fn console_subscriber_layer<S>(&self) -> Option<impl Layer<S> + Send + Sync>
+    where
+        S: Subscriber,
+        for<'a> S: LookupSpan<'a>,
+    {
+        if self.console_subscriber {
+            Some(console_subscriber::ConsoleLayer::builder().spawn())
+        } else {
+            None
+        }
+    }
+    pub fn install(&self) -> Result<()> {
+        println!("Setting up logs: {:?}", self);
+        color_eyre::install()?;
 
-    let filter_layer = build_env_filter(log_level)?;
+        let filter_layer = build_env_filter(self.level)?;
 
-    let fmt_layer = build_fmt_layer!();
-    let console_layer = console_subscriber::ConsoleLayer::builder().spawn();
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .with(console_layer)
-        .init();
-    log_panics::init();
-    Ok(())
+        let file_layer = self.file_layer()?;
+
+        let console_layer = self.console_layer();
+
+        let console_subscriber_layer = self.console_subscriber_layer();
+
+        // special handling to make it fast
+        if console_layer.is_some() && file_layer.is_none() && console_subscriber_layer.is_none() {
+            tracing_subscriber::registry()
+                .with(filter_layer)
+                .with(console_layer.unwrap())
+                .init();
+        } else {
+            tracing_subscriber::registry()
+                .with(filter_layer)
+                .with(console_layer)
+                .with(file_layer)
+                .with(console_subscriber_layer)
+                .init();
+        }
+
+        log_panics::init();
+
+        Ok(())
+    }
+}
+pub fn setup_logs(log: impl Into<LogConfig>) -> Result<()> {
+    log.into().install()
 }
