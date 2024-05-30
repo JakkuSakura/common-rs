@@ -1,6 +1,6 @@
 use std::env::current_dir;
 use std::fmt::Debug;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use eyre::{bail, Result};
@@ -23,7 +23,7 @@ struct CliArgument {
     config: Option<PathBuf>,
 }
 
-pub fn load_config<Config: DeserializeOwned + Debug>(path: impl AsRef<str>) -> Result<Config> {
+pub fn load_config<Config: DeserializeOwned + Debug>(path: impl AsRef<Path>) -> Result<Config> {
     if let Err(err) = load_env_recursively() {
         println!("Failed to load environment: {}", err);
     }
