@@ -19,9 +19,9 @@ pub fn load_env_recursively() -> Result<bool> {
     loop {
         let env_path = path.join(".env");
         if env_path.exists() {
-            println!("loading .env from path: {}", env_path.display());
+            println!("Loading .env from path: {}", env_path.display());
             dotenvy::from_path(&env_path).with_context(|| {
-                format!("failed to load .env from path: {}", env_path.display())
+                format!("Failed to load .env from path: {}", env_path.display())
             })?;
             return Ok(true);
         }
