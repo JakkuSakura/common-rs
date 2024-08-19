@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use eyre::{bail, Result};
+use eyre::{bail, Context, Result};
 use serde::de::DeserializeOwned;
 
 use crate::load_env_recursively;
@@ -17,26 +17,28 @@ struct CliArgument {
     long,
     value_parser,
     value_name = "FILE",
-    env = "CONFIG",
     value_hint = clap::ValueHint::FilePath
     )]
     config: Option<PathBuf>,
 }
 
+pub fn load_config_with_cli<Config: DeserializeOwned + Debug>(
+    path: impl AsRef<Path>,
+) -> Result<Config> {
+    let args: CliArgument = CliArgument::parse();
+    let config = args.config.unwrap_or_else(|| PathBuf::from(path.as_ref()));
+    load_config(config)
+}
 pub fn load_config<Config: DeserializeOwned + Debug>(path: impl AsRef<Path>) -> Result<Config> {
     if let Err(err) = load_env_recursively() {
         println!("Failed to load environment: {}", err);
     }
-    // print all environment variables
-    // for (key, value) in std::env::vars() {
-    //     println!("{}: {}", key, value);
-    // }
-    let args: CliArgument = CliArgument::parse();
 
     println!("Working directory {}", current_dir()?.display());
-    let config = args.config.unwrap_or_else(|| PathBuf::from(path.as_ref()));
-    println!("Loading config from {}", config.display());
-    let config = std::fs::read_to_string(&config)?;
+    let path = path.as_ref();
+    println!("Loading config from {}", path.display());
+    let config =
+        std::fs::read_to_string(&path).with_context(|| format!("path: {}", path.display()))?;
     parse_config(&config)
 }
 
