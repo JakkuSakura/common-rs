@@ -25,15 +25,12 @@ struct CliArgument {
 pub fn load_config_with_cli<Config: DeserializeOwned + Debug>(
     path: impl AsRef<Path>,
 ) -> Result<Config> {
+    load_env_recursively()?;
     let args: CliArgument = CliArgument::parse();
     let config = args.config.unwrap_or_else(|| PathBuf::from(path.as_ref()));
     load_config(config)
 }
 pub fn load_config<Config: DeserializeOwned + Debug>(path: impl AsRef<Path>) -> Result<Config> {
-    if let Err(err) = load_env_recursively() {
-        println!("Failed to load environment: {}", err);
-    }
-
     println!("Working directory {}", current_dir()?.display());
     let path = path.as_ref();
     println!("Loading config from {}", path.display());
