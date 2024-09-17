@@ -167,7 +167,12 @@ impl LogConfig {
             LogRotationInterval::Hourly => tracing_appender::rolling::hourly(path, prefix),
             LogRotationInterval::Never => tracing_appender::rolling::never(path, prefix),
         };
-        Ok(Some(build_fmt_layer!().with_writer(rotation).boxed()))
+        Ok(Some(
+            build_fmt_layer!()
+                .with_ansi(false)
+                .with_writer(rotation)
+                .boxed(),
+        ))
     }
     fn console_subscriber_layer<S>(&self) -> Option<impl Layer<S> + Send + Sync>
     where
