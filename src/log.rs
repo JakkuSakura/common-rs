@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -180,7 +181,8 @@ impl LogConfig {
         }
     }
     pub fn install(&self) -> Result<()> {
-        println!("Setting up logs: {:?}", self);
+        // avoid output capturing in tests
+        writeln!(std::io::stdout(), "Setting up logs: {:?}", self)?;
         color_eyre::install()?;
 
         let filter_layer = build_env_filter(self.level)?;
