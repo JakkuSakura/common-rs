@@ -221,3 +221,10 @@ impl LogConfig {
 pub fn setup_logs(log: impl Into<LogConfig>) -> Result<()> {
     log.into().install()
 }
+pub fn get_log_level_from_verbosity(verbosity: u8, levels: &[LogLevel]) -> LogLevel {
+    if verbosity >= levels.len() as u8 {
+        levels.last().copied().unwrap()
+    } else {
+        levels[verbosity as usize]
+    }
+}
