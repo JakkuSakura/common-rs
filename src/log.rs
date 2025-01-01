@@ -80,6 +80,8 @@ fn build_env_filter(log_level: LogLevel) -> Result<EnvFilter> {
             .add_directive("tungstenite::handshake=debug".parse()?)
             .add_directive("tokio_postgres::connection=debug".parse()?)
             .add_directive("tokio_util::codec::framed_impl=debug".parse()?)
+            .add_directive("databend_client=warn".parse()?)
+            .add_directive("databend_driver=warn".parse()?)
             .add_directive("tokio_tungstenite=debug".parse()?)
             .add_directive("h2=info".parse()?)
             .add_directive("rustls::client::hs=info".parse()?)
