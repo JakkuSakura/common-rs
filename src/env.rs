@@ -1,5 +1,6 @@
 use dotenvy::dotenv;
 use eyre::{Context, Result};
+use std::path::Path;
 
 pub fn load_env() -> Result<()> {
     let path = std::env::current_dir()?;
@@ -16,6 +17,34 @@ pub fn load_env_recursively() -> Result<bool> {
         "Loading environment recursively from path: {}",
         path.display()
     );
+    if let Ok(secrets_dir) = std::env::var("NOMAD_SECRETS_DIR") {
+        let env_path = Path::new(&secrets_dir).join(".env");
+        if env_path.exists() {
+            println!("Loading .env from Nomad secrets path: {}", env_path.display());
+            match std::fs::File::open(&env_path) {
+                Ok(_) => match dotenvy::from_path(&env_path) {
+                    Ok(_) => return Ok(true),
+                    Err(err) => {
+                        eprintln!(
+                            "Failed to load .env from path: {}: {}",
+                            env_path.display(),
+                            err
+                        );
+                    }
+                },
+                Err(err) if err.kind() == std::io::ErrorKind::PermissionDenied => {
+                    eprintln!(
+                        "Skipping .env from {} (permission denied)",
+                        env_path.display()
+                    );
+                }
+                Err(err) => {
+                    return Err(err)
+                        .with_context(|| format!("Failed to open .env at {}", env_path.display()));
+                }
+            };
+        }
+    }
     loop {
         let env_path = path.join(".env");
         if env_path.exists() {
